@@ -15,7 +15,8 @@ import {
   Sparkles,
   Trash2,
   Type,
-  WandSparkles
+  WandSparkles,
+  X
 } from "lucide-react";
 import "./styles.css";
 
@@ -336,6 +337,7 @@ function App() {
     safeJsonParse(window.localStorage.getItem(CUSTOM_TEMPLATES_KEY), [])
   );
   const [selectedTemplateId, setSelectedTemplateId] = useState("auto");
+  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
   const [autoPattern, setAutoPattern] = useState<AutoPattern>("diagonal");
   const [prompt, setPrompt] = useState("AIで集客投稿をもっと楽しく作る");
   const [headline, setHeadline] = useState("AI集客を楽しく");
@@ -351,6 +353,12 @@ function App() {
     [customTemplates]
   );
   const selectedTemplate = backgroundTemplates.find((template) => template.id === selectedTemplateId);
+  const visibleTemplates = backgroundTemplates.slice(0, 3);
+
+  const selectTemplate = (id: string) => {
+    setSelectedTemplateId(id);
+    setIsTemplatePickerOpen(false);
+  };
 
   const addFavorite = () => {
     setFavorites((current) => {
@@ -590,6 +598,21 @@ function App() {
     </div>
   );
 
+  const renderTemplatePreview = (template: BackgroundTemplate) => (
+    template.spriteIndex !== undefined ? (
+      <span
+        className="sprite-preview"
+        style={{
+          backgroundImage: `url(${template.src})`,
+          backgroundPosition: `center ${(template.spriteIndex / (builtInTemplates.length - 1)) * 100}%`,
+          backgroundSize: `100% ${builtInTemplates.length * 100}%`
+        }}
+      />
+    ) : (
+      <img src={template.src} alt="" />
+    )
+  );
+
   return (
     <main className="app-shell">
       <section className="workbench">
@@ -653,6 +676,27 @@ function App() {
                 />
               ))}
             </div>
+            <div className="pattern-panel">
+              <div className="sub-panel-title">
+                <strong>あしらい</strong>
+              </div>
+              <div className="pattern-row">
+                {Object.entries(autoPatterns).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={autoPattern === key ? "active" : ""}
+                    onClick={() => {
+                      setSelectedTemplateId("auto");
+                      setAutoPattern(key as AutoPattern);
+                    }}
+                  >
+                    <span className={`pattern-sample ${key}`} />
+                    <strong>{label}</strong>
+                  </button>
+                ))}
+              </div>
+            </div>
           </section>
 
           <section className="panel">
@@ -660,60 +704,27 @@ function App() {
               <GalleryHorizontalEnd size={18} />
               <h2>背景テンプレート</h2>
             </div>
+            <button
+              type="button"
+              className={`auto-strip ${selectedTemplateId === "auto" ? "active" : ""}`}
+              onClick={() => setSelectedTemplateId("auto")}
+            >
+              <span className="auto-preview" style={{ background: `linear-gradient(135deg, #fff7fb, ${baseColor}, #f8fff4)` }} />
+              <strong>自動背景</strong>
+            </button>
             <div className="template-grid">
-              <button
-                type="button"
-                className={`template-card auto-template ${selectedTemplateId === "auto" ? "active" : ""}`}
-                onClick={() => setSelectedTemplateId("auto")}
-              >
-                <span className="auto-preview" style={{ background: `linear-gradient(135deg, #fff7fb, ${baseColor}, #f8fff4)` }} />
-                <strong>自動背景</strong>
-              </button>
-              {backgroundTemplates.map((template) => (
+              {visibleTemplates.map((template) => (
                 <div key={template.id} className={`template-card-wrap ${selectedTemplateId === template.id ? "active" : ""}`}>
-                  <button type="button" className="template-card" onClick={() => setSelectedTemplateId(template.id)}>
-                    {template.spriteIndex !== undefined ? (
-                      <span
-                        className="sprite-preview"
-                        style={{
-                          backgroundImage: `url(${template.src})`,
-                          backgroundPosition: `center ${(template.spriteIndex / (builtInTemplates.length - 1)) * 100}%`,
-                          backgroundSize: `100% ${builtInTemplates.length * 100}%`
-                        }}
-                      />
-                    ) : (
-                      <img src={template.src} alt="" />
-                    )}
+                  <button type="button" className="template-card" onClick={() => selectTemplate(template.id)}>
+                    {renderTemplatePreview(template)}
                     <strong>{template.name}</strong>
                   </button>
-                  {template.source === "custom" && (
-                    <button
-                      type="button"
-                      className="template-delete"
-                      aria-label={`${template.name}を削除`}
-                      onClick={() => removeCustomTemplate(template.id)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
-            <div className="pattern-row">
-              {Object.entries(autoPatterns).map(([key, label]) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={autoPattern === key ? "active" : ""}
-                  onClick={() => {
-                    setSelectedTemplateId("auto");
-                    setAutoPattern(key as AutoPattern);
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <button type="button" className="template-picker-button" onClick={() => setIsTemplatePickerOpen(true)}>
+              テンプレートを一覧から選ぶ
+            </button>
             <label className="template-upload">
               <ImagePlus size={18} />
               マイテンプレート追加
@@ -802,6 +813,49 @@ function App() {
           </div>
         </section>
       </section>
+      {isTemplatePickerOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setIsTemplatePickerOpen(false)}>
+          <section className="template-modal" role="dialog" aria-modal="true" aria-label="背景テンプレート選択" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="template-modal-head">
+              <div>
+                <p className="eyebrow">Templates</p>
+                <h2>背景テンプレート</h2>
+              </div>
+              <button type="button" className="modal-close" onClick={() => setIsTemplatePickerOpen(false)} aria-label="閉じる">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="template-modal-grid">
+              <button
+                type="button"
+                className={`template-card auto-template ${selectedTemplateId === "auto" ? "active" : ""}`}
+                onClick={() => selectTemplate("auto")}
+              >
+                <span className="auto-preview" style={{ background: `linear-gradient(135deg, #fff7fb, ${baseColor}, #f8fff4)` }} />
+                <strong>自動背景</strong>
+              </button>
+              {backgroundTemplates.map((template) => (
+                <div key={template.id} className={`template-card-wrap ${selectedTemplateId === template.id ? "active" : ""}`}>
+                  <button type="button" className="template-card" onClick={() => selectTemplate(template.id)}>
+                    {renderTemplatePreview(template)}
+                    <strong>{template.name}</strong>
+                  </button>
+                  {template.source === "custom" && (
+                    <button
+                      type="button"
+                      className="template-delete"
+                      aria-label={`${template.name}を削除`}
+                      onClick={() => removeCustomTemplate(template.id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
