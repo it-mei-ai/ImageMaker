@@ -236,6 +236,87 @@ textarea {
   box-shadow: 0 0 0 1px #d7e0ea;
 }
 
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.template-card-wrap {
+  position: relative;
+  min-width: 0;
+  border-radius: 8px;
+}
+
+.template-card {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  min-height: 108px;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #243244;
+  padding: 7px;
+  text-align: left;
+}
+
+.template-card-wrap.active .template-card,
+.template-card.active {
+  border-color: #00a6c8;
+  box-shadow: inset 0 0 0 2px rgba(0, 166, 200, 0.16);
+}
+
+.template-card img,
+.auto-preview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #f1f5f9;
+}
+
+.template-card strong {
+  color: #334155;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.template-delete {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.74);
+  color: #ffffff;
+}
+
+.template-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  margin-top: 10px;
+  border: 1px dashed #aab8c7;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.template-upload input {
+  display: none;
+}
+
 .upload-box {
   display: grid;
   place-items: center;
@@ -409,7 +490,8 @@ canvas {
   }
 
   .segmented,
-  .swatches {
+  .swatches,
+  .template-grid {
     grid-template-columns: 1fr 1fr;
   }
 

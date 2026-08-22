@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Download,
+  GalleryHorizontalEnd,
   ImagePlus,
   LayoutTemplate,
   Palette,
@@ -10,6 +11,8 @@ import {
   Type,
   WandSparkles
 } from "lucide-react";
+import floralOrangeTemplate from "./assets/templates/floral-orange.png";
+import floralPinkTemplate from "./assets/templates/floral-pink.png";
 import "./styles.css";
 
 type Format = "portrait" | "landscape";
@@ -20,12 +23,35 @@ type UploadedImage = {
   src: string;
 };
 
+type BackgroundTemplate = UploadedImage & {
+  source: "built-in" | "custom";
+};
+
 const formats: Record<Format, { label: string; width: number; height: number }> = {
   portrait: { label: "9:16", width: 1080, height: 1920 },
   landscape: { label: "16:9", width: 1920, height: 1080 }
 };
 
 const defaultFavorites = ["#ff5c8a", "#ffcf33", "#00bcd4", "#4f46e5", "#22c55e", "#ffffff"];
+const CUSTOM_TEMPLATES_KEY = "imagemaker-custom-templates";
+
+const builtInTemplates: BackgroundTemplate[] = [
+  { id: "built-in-floral-pink", name: "ピンクフラワー", src: floralPinkTemplate, source: "built-in" },
+  { id: "built-in-floral-orange", name: "オレンジフラワー", src: floralOrangeTemplate, source: "built-in" }
+];
+
+const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+};
+
+const saveCustomTemplates = (templates: BackgroundTemplate[]) => {
+  window.localStorage.setItem(CUSTOM_TEMPLATES_KEY, JSON.stringify(templates));
+};
 
 const loadCanvasImage = (src: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
@@ -50,6 +76,18 @@ const drawCoverImage = (
   const sourceY = (image.height - sourceHeight) / 2;
   ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
 };
+
+const readImageFile = (file: File) =>
+  new Promise<UploadedImage>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () =>
+      resolve({
+        id: `${file.name}-${crypto.randomUUID()}`,
+        name: file.name,
+        src: String(reader.result)
+      });
+    reader.readAsDataURL(file);
+  });
 
 const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number) => {
   const lines: string[] = [];
@@ -84,12 +122,22 @@ function App() {
   const [baseColor, setBaseColor] = useState("#ff5c8a");
   const [favorites, setFavorites] = useState<string[]>(() => {
     const saved = window.localStorage.getItem("creative-color-favorites");
-    return saved ? (JSON.parse(saved) as string[]) : defaultFavorites;
+    return safeJsonParse(saved, defaultFavorites);
   });
+  const [customTemplates, setCustomTemplates] = useState<BackgroundTemplate[]>(() =>
+    safeJsonParse(window.localStorage.getItem(CUSTOM_TEMPLATES_KEY), [])
+  );
+  const [selectedTemplateId, setSelectedTemplateId] = useState("auto");
   const [prompt, setPrompt] = useState("AIで集客投稿をもっと楽しく作る");
   const [headline, setHeadline] = useState("AI集客を楽しく");
   const [subline, setSubline] = useState("今日から投稿が変わる");
   const [images, setImages] = useState<UploadedImage[]>([]);
+
+  const backgroundTemplates = useMemo(
+    () => [...builtInTemplates, ...customTemplates],
+    [customTemplates]
+  );
+  const selectedTemplate = backgroundTemplates.find((template) => template.id === selectedTemplateId);
 
   const addFavorite = () => {
     setFavorites((current) => {
@@ -110,22 +158,29 @@ function App() {
   const handleImageUpload = async (files: FileList | null) => {
     if (!files) return;
     const selected = Array.from(files).slice(0, Math.max(0, 3 - images.length));
-    const nextImages = await Promise.all(
-      selected.map(
-        (file) =>
-          new Promise<UploadedImage>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () =>
-              resolve({
-                id: `${file.name}-${crypto.randomUUID()}`,
-                name: file.name,
-                src: String(reader.result)
-              });
-            reader.readAsDataURL(file);
-          })
-      )
-    );
+    const nextImages = await Promise.all(selected.map(readImageFile));
     setImages((current) => [...current, ...nextImages].slice(0, 3));
+  };
+
+  const handleTemplateUpload = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const nextTemplates = (await Promise.all(Array.from(files).slice(0, 4).map(readImageFile)))
+      .map((image) => ({ ...image, source: "custom" as const }));
+    setCustomTemplates((current) => {
+      const next = [...nextTemplates, ...current].slice(0, 10);
+      saveCustomTemplates(next);
+      setSelectedTemplateId(nextTemplates[0]?.id || selectedTemplateId);
+      return next;
+    });
+  };
+
+  const removeCustomTemplate = (id: string) => {
+    setCustomTemplates((current) => {
+      const next = current.filter((template) => template.id !== id);
+      saveCustomTemplates(next);
+      if (selectedTemplateId === id) setSelectedTemplateId("auto");
+      return next;
+    });
   };
 
   const renderCanvas = useCallback(async () => {
@@ -137,27 +192,34 @@ function App() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const gradient = ctx.createLinearGradient(0, 0, size.width, size.height);
-    gradient.addColorStop(0, "#fff7fb");
-    gradient.addColorStop(0.45, baseColor);
-    gradient.addColorStop(1, "#f8fff4");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size.width, size.height);
+    if (selectedTemplate) {
+      const backgroundImage = await loadCanvasImage(selectedTemplate.src);
+      drawCoverImage(ctx, backgroundImage, 0, 0, size.width, size.height);
+    } else {
+      const gradient = ctx.createLinearGradient(0, 0, size.width, size.height);
+      gradient.addColorStop(0, "#fff7fb");
+      gradient.addColorStop(0.45, baseColor);
+      gradient.addColorStop(1, "#f8fff4");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size.width, size.height);
 
-    ctx.globalAlpha = 0.18;
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = format === "portrait" ? 18 : 12;
-    for (let x = -size.height; x < size.width + size.height; x += 160) {
-      ctx.beginPath();
-      ctx.moveTo(x, size.height);
-      ctx.lineTo(x + size.height, 0);
-      ctx.stroke();
+      ctx.globalAlpha = 0.18;
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = format === "portrait" ? 18 : 12;
+      for (let x = -size.height; x < size.width + size.height; x += 160) {
+        ctx.beginPath();
+        ctx.moveTo(x, size.height);
+        ctx.lineTo(x + size.height, 0);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
     }
-    ctx.globalAlpha = 1;
 
     const loadedImages = await Promise.all(images.map((image) => loadCanvasImage(image.src)));
     const imageArea = format === "portrait"
-      ? { x: 96, y: 164, width: 888, height: 720 }
+      ? selectedTemplate
+        ? { x: 120, y: 800, width: 840, height: 420 }
+        : { x: 96, y: 164, width: 888, height: 720 }
       : { x: 1080, y: 120, width: 690, height: 840 };
     loadedImages.forEach((image, index) => {
       const offset = index * 34;
@@ -169,8 +231,12 @@ function App() {
       ctx.restore();
     });
 
-    ctx.fillStyle = "rgba(255,255,255,0.9)";
-    const textBox = format === "portrait" ? { x: 86, y: 1010, width: 908, height: 650 } : { x: 110, y: 170, width: 820, height: 700 };
+    ctx.fillStyle = selectedTemplate ? "rgba(255,255,255,0.78)" : "rgba(255,255,255,0.9)";
+    const textBox = format === "portrait"
+      ? selectedTemplate
+        ? { x: 108, y: images.length ? 1260 : 860, width: 864, height: images.length ? 310 : 650 }
+        : { x: 86, y: 1010, width: 908, height: 650 }
+      : { x: 110, y: 170, width: 820, height: 700 };
     ctx.beginPath();
     ctx.roundRect(textBox.x, textBox.y, textBox.width, textBox.height, 44);
     ctx.fill();
@@ -185,7 +251,7 @@ function App() {
     wrapText(ctx, subline, textBox.width - 120).slice(0, 2).forEach((line, index) => {
       ctx.fillText(line, textBox.x + 60, textBox.y + textBox.height - 120 + index * 54);
     });
-  }, [baseColor, format, headline, images, subline]);
+  }, [baseColor, format, headline, images, selectedTemplate, subline]);
 
   useEffect(() => {
     void renderCanvas();
@@ -260,6 +326,49 @@ function App() {
                 />
               ))}
             </div>
+          </section>
+
+          <section className="panel">
+            <div className="panel-title">
+              <GalleryHorizontalEnd size={18} />
+              <h2>背景テンプレート</h2>
+            </div>
+            <div className="template-grid">
+              <button
+                type="button"
+                className={`template-card auto-template ${selectedTemplateId === "auto" ? "active" : ""}`}
+                onClick={() => setSelectedTemplateId("auto")}
+              >
+                <span className="auto-preview" style={{ background: `linear-gradient(135deg, #fff7fb, ${baseColor}, #f8fff4)` }} />
+                <strong>自動背景</strong>
+              </button>
+              {backgroundTemplates.map((template) => (
+                <div key={template.id} className={`template-card-wrap ${selectedTemplateId === template.id ? "active" : ""}`}>
+                  <button type="button" className="template-card" onClick={() => setSelectedTemplateId(template.id)}>
+                    <img src={template.src} alt="" />
+                    <strong>{template.name}</strong>
+                  </button>
+                  {template.source === "custom" && (
+                    <button
+                      type="button"
+                      className="template-delete"
+                      aria-label={`${template.name}を削除`}
+                      onClick={() => removeCustomTemplate(template.id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <label className="template-upload">
+              <ImagePlus size={18} />
+              マイテンプレート追加
+              <input type="file" accept="image/*" multiple onChange={(event) => {
+                void handleTemplateUpload(event.target.files);
+                event.currentTarget.value = "";
+              }} />
+            </label>
           </section>
 
           <section className="panel">
