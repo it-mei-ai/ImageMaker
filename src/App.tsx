@@ -17,7 +17,6 @@ import {
   Type,
   WandSparkles
 } from "lucide-react";
-import defaultTemplateSprite from "./assets/templates/default-template-sprite.jpg";
 import "./styles.css";
 
 type Format = "portrait" | "landscape";
@@ -57,6 +56,7 @@ const formats: Record<Format, { label: string; width: number; height: number }> 
 
 const defaultFavorites = ["#ff5c8a", "#ffcf33", "#00bcd4", "#4f46e5", "#22c55e", "#ffffff"];
 const CUSTOM_TEMPLATES_KEY = "imagemaker-custom-templates";
+const defaultTemplateSprite = "https://raw.githubusercontent.com/it-mei-ai/ImageMaker/main/src/assets/templates/default-template-sprite.jpg";
 const TEMPLATE_SPRITE_WIDTH = 540;
 const TEMPLATE_SPRITE_HEIGHT = 960;
 
@@ -120,6 +120,7 @@ const saveCustomTemplates = (templates: BackgroundTemplate[]) => {
 const loadCanvasImage = (src: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
+    if (/^https?:/.test(src)) image.crossOrigin = "anonymous";
     image.onload = () => resolve(image);
     image.onerror = reject;
     image.src = src;
