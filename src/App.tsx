@@ -11,8 +11,8 @@ import {
   Type,
   WandSparkles
 } from "lucide-react";
-import floralOrangeTemplate from "./assets/templates/floral-orange.png";
-import floralPinkTemplate from "./assets/templates/floral-pink.png";
+import floralOrangeTemplate from "./assets/templates/floral-orange.jpg";
+import floralPinkTemplate from "./assets/templates/floral-pink.jpg";
 import "./styles.css";
 
 type Format = "portrait" | "landscape";
