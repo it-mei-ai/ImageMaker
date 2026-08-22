@@ -169,6 +169,39 @@ h2 {
   font-weight: 800;
 }
 
+.guide-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  margin-top: 10px;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.guide-toggle.active {
+  border-color: #172033;
+  background: #f1f5f9;
+}
+
+.guide-toggle span {
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+
+.guide-toggle strong {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 12px;
+}
+
 .color-row {
   gap: 8px;
 }
@@ -459,6 +492,45 @@ canvas {
   max-height: calc(100vh - 126px);
   border-radius: 8px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.canvas-frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  max-width: 100%;
+  max-height: calc(100vh - 126px);
+}
+
+.canvas-frame canvas {
+  max-height: calc(100vh - 126px);
+}
+
+.hidden-area-guide {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 14.84375% 70.3125% 14.84375%;
+  overflow: hidden;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.hidden-band {
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.68);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: clamp(18px, 4.2vw, 46px);
+  font-weight: 900;
+  letter-spacing: 0;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.24);
+}
+
+.safe-band {
+  border-top: 1px dashed rgba(15, 23, 42, 0.28);
+  border-bottom: 1px dashed rgba(15, 23, 42, 0.28);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .portrait canvas {

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Download,
+  Eye,
+  EyeOff,
   GalleryHorizontalEnd,
   ImagePlus,
   LayoutTemplate,
@@ -132,6 +134,7 @@ function App() {
   const [headline, setHeadline] = useState("AI集客を楽しく");
   const [subline, setSubline] = useState("今日から投稿が変わる");
   const [images, setImages] = useState<UploadedImage[]>([]);
+  const [showHiddenAreaGuide, setShowHiddenAreaGuide] = useState(false);
 
   const backgroundTemplates = useMemo(
     () => [...builtInTemplates, ...customTemplates],
@@ -299,6 +302,15 @@ function App() {
                 </button>
               ))}
             </div>
+            <button
+              type="button"
+              className={`guide-toggle ${showHiddenAreaGuide ? "active" : ""}`}
+              onClick={() => setShowHiddenAreaGuide((current) => !current)}
+            >
+              {showHiddenAreaGuide ? <Eye size={17} /> : <EyeOff size={17} />}
+              <span>テキスト非表示エリア</span>
+              <strong>{showHiddenAreaGuide ? "表示中" : "非表示"}</strong>
+            </button>
           </section>
 
           <section className="panel">
@@ -428,7 +440,16 @@ function App() {
             </span>
           </div>
           <div className="canvas-stage">
-            <canvas ref={canvasRef} aria-label="生成画像プレビュー" />
+            <div className="canvas-frame">
+              <canvas ref={canvasRef} aria-label="生成画像プレビュー" />
+              {showHiddenAreaGuide && format === "portrait" && (
+                <div className="hidden-area-guide" aria-hidden="true">
+                  <div className="hidden-band top">非表示エリア</div>
+                  <div className="safe-band" />
+                  <div className="hidden-band bottom">非表示エリア</div>
+                </div>
+              )}
+            </div>
           </div>
         </section>
       </section>
