@@ -17,19 +17,7 @@ import {
   Type,
   WandSparkles
 } from "lucide-react";
-import floralOrangeTemplate from "./assets/templates/floral-orange.jpg";
-import floralPinkTemplate from "./assets/templates/floral-pink.jpg";
-import template2 from "./assets/templates/template-2.jpg";
-import template3 from "./assets/templates/template-3.jpg";
-import template4 from "./assets/templates/template-4.jpg";
-import template5 from "./assets/templates/template-5.jpg";
-import template6 from "./assets/templates/template-6.jpg";
-import template7 from "./assets/templates/template-7.jpg";
-import template8 from "./assets/templates/template-8.jpg";
-import template9 from "./assets/templates/template-9.jpg";
-import template10 from "./assets/templates/template-10.jpg";
-import template11 from "./assets/templates/template-11.jpg";
-import template12 from "./assets/templates/template-12.jpg";
+import defaultTemplateSprite from "./assets/templates/default-template-sprite.jpg";
 import "./styles.css";
 
 type Format = "portrait" | "landscape";
@@ -44,6 +32,7 @@ type UploadedImage = {
 
 type BackgroundTemplate = UploadedImage & {
   source: "built-in" | "custom";
+  spriteIndex?: number;
 };
 
 type BoxSettings = {
@@ -68,6 +57,8 @@ const formats: Record<Format, { label: string; width: number; height: number }> 
 
 const defaultFavorites = ["#ff5c8a", "#ffcf33", "#00bcd4", "#4f46e5", "#22c55e", "#ffffff"];
 const CUSTOM_TEMPLATES_KEY = "imagemaker-custom-templates";
+const TEMPLATE_SPRITE_WIDTH = 540;
+const TEMPLATE_SPRITE_HEIGHT = 960;
 
 const autoPatterns: Record<AutoPattern, string> = {
   diagonal: "斜めライン",
@@ -98,19 +89,19 @@ const getDefaultBodyBox = (format: Format): TextSettings => {
 };
 
 const builtInTemplates: BackgroundTemplate[] = [
-  { id: "built-in-floral-pink", name: "ピンクフラワー", src: floralPinkTemplate, source: "built-in" },
-  { id: "built-in-floral-orange", name: "オレンジフラワー", src: floralOrangeTemplate, source: "built-in" },
-  { id: "built-in-template-2", name: "花フレーム ピンク", src: template2, source: "built-in" },
-  { id: "built-in-template-3", name: "花フレーム オレンジ", src: template3, source: "built-in" },
-  { id: "built-in-template-4", name: "勉強会 開催したよ", src: template4, source: "built-in" },
-  { id: "built-in-template-5", name: "勉強会 開催するよ", src: template5, source: "built-in" },
-  { id: "built-in-template-6", name: "業務効率化 AI", src: template6, source: "built-in" },
-  { id: "built-in-template-7", name: "業務効率化 グリーン", src: template7, source: "built-in" },
-  { id: "built-in-template-8", name: "業務効率化 イエロー", src: template8, source: "built-in" },
-  { id: "built-in-template-9", name: "ペライチ制作事例", src: template9, source: "built-in" },
-  { id: "built-in-template-10", name: "花ライン ピンク", src: template10, source: "built-in" },
-  { id: "built-in-template-11", name: "花ライン オレンジ", src: template11, source: "built-in" },
-  { id: "built-in-template-12", name: "回路ライン イエロー", src: template12, source: "built-in" }
+  { id: "built-in-floral-pink", name: "ピンクフラワー", src: defaultTemplateSprite, source: "built-in", spriteIndex: 0 },
+  { id: "built-in-floral-orange", name: "オレンジフラワー", src: defaultTemplateSprite, source: "built-in", spriteIndex: 1 },
+  { id: "built-in-template-2", name: "花フレーム ピンク", src: defaultTemplateSprite, source: "built-in", spriteIndex: 2 },
+  { id: "built-in-template-3", name: "花フレーム オレンジ", src: defaultTemplateSprite, source: "built-in", spriteIndex: 3 },
+  { id: "built-in-template-4", name: "勉強会 開催したよ", src: defaultTemplateSprite, source: "built-in", spriteIndex: 4 },
+  { id: "built-in-template-5", name: "勉強会 開催するよ", src: defaultTemplateSprite, source: "built-in", spriteIndex: 5 },
+  { id: "built-in-template-6", name: "業務効率化 AI", src: defaultTemplateSprite, source: "built-in", spriteIndex: 6 },
+  { id: "built-in-template-7", name: "業務効率化 グリーン", src: defaultTemplateSprite, source: "built-in", spriteIndex: 7 },
+  { id: "built-in-template-8", name: "業務効率化 イエロー", src: defaultTemplateSprite, source: "built-in", spriteIndex: 8 },
+  { id: "built-in-template-9", name: "ペライチ制作事例", src: defaultTemplateSprite, source: "built-in", spriteIndex: 9 },
+  { id: "built-in-template-10", name: "花ライン ピンク", src: defaultTemplateSprite, source: "built-in", spriteIndex: 10 },
+  { id: "built-in-template-11", name: "花ライン オレンジ", src: defaultTemplateSprite, source: "built-in", spriteIndex: 11 },
+  { id: "built-in-template-12", name: "回路ライン イエロー", src: defaultTemplateSprite, source: "built-in", spriteIndex: 12 }
 ];
 
 const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
@@ -148,6 +139,26 @@ const drawCoverImage = (
   const sourceX = (image.width - sourceWidth) / 2;
   const sourceY = (image.height - sourceHeight) / 2;
   ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+};
+
+const drawCoverImageSource = (
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  sourceX: number,
+  sourceY: number,
+  sourceWidth: number,
+  sourceHeight: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) => {
+  const ratio = Math.max(width / sourceWidth, height / sourceHeight);
+  const cropWidth = width / ratio;
+  const cropHeight = height / ratio;
+  const cropX = sourceX + (sourceWidth - cropWidth) / 2;
+  const cropY = sourceY + (sourceHeight - cropHeight) / 2;
+  ctx.drawImage(image, cropX, cropY, cropWidth, cropHeight, x, y, width, height);
 };
 
 const clampNumber = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -435,7 +446,22 @@ function App() {
 
     if (selectedTemplate) {
       const backgroundImage = await loadCanvasImage(selectedTemplate.src);
-      drawCoverImage(ctx, backgroundImage, 0, 0, size.width, size.height);
+      if (selectedTemplate.spriteIndex !== undefined) {
+        drawCoverImageSource(
+          ctx,
+          backgroundImage,
+          0,
+          selectedTemplate.spriteIndex * TEMPLATE_SPRITE_HEIGHT,
+          TEMPLATE_SPRITE_WIDTH,
+          TEMPLATE_SPRITE_HEIGHT,
+          0,
+          0,
+          size.width,
+          size.height
+        );
+      } else {
+        drawCoverImage(ctx, backgroundImage, 0, 0, size.width, size.height);
+      }
     } else {
       const gradient = ctx.createLinearGradient(0, 0, size.width, size.height);
       gradient.addColorStop(0, "#fff7fb");
@@ -645,7 +671,18 @@ function App() {
               {backgroundTemplates.map((template) => (
                 <div key={template.id} className={`template-card-wrap ${selectedTemplateId === template.id ? "active" : ""}`}>
                   <button type="button" className="template-card" onClick={() => setSelectedTemplateId(template.id)}>
-                    <img src={template.src} alt="" />
+                    {template.spriteIndex !== undefined ? (
+                      <span
+                        className="sprite-preview"
+                        style={{
+                          backgroundImage: `url(${template.src})`,
+                          backgroundPosition: `center ${(template.spriteIndex / (builtInTemplates.length - 1)) * 100}%`,
+                          backgroundSize: `100% ${builtInTemplates.length * 100}%`
+                        }}
+                      />
+                    ) : (
+                      <img src={template.src} alt="" />
+                    )}
                     <strong>{template.name}</strong>
                   </button>
                   {template.source === "custom" && (

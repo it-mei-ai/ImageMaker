@@ -301,13 +301,19 @@ textarea {
 }
 
 .template-card img,
-.auto-preview {
+.auto-preview,
+.sprite-preview {
   display: block;
   width: 100%;
   aspect-ratio: 9 / 16;
   border-radius: 6px;
   object-fit: cover;
   background: #f1f5f9;
+}
+
+.sprite-preview {
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .template-card strong {
